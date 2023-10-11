@@ -1,11 +1,10 @@
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
-const Payment = require('../models/Payment');
-const Cart = require('../models/Cart');
-const nodemailer = require('nodemailer');
-const dotenv = require('dotenv');
-dotenv.config()
-
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
+const Payment = require("../models/Payment");
+const Cart = require("../models/Cart");
+const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
+dotenv.config();
 
 let productInfo = {};
 let userData = {};
@@ -16,14 +15,12 @@ const instance = new Razorpay({
   key_secret: process.env.RAZORPAY_API_SECRET,
 });
 const checkout = async (req, res) => {
-
   try {
-    const { amount, userId, productDetails, userDetails } = req.body
-    totalAmount = Number(amount)
-    userInfo = userId
-    productInfo = JSON.parse(productDetails)
-    userData = JSON.parse(userDetails)
-
+    const { amount, userId, productDetails, userDetails } = req.body;
+    totalAmount = Number(amount);
+    userInfo = userId;
+    productInfo = JSON.parse(productDetails);
+    userData = JSON.parse(userDetails);
 
     const options = {
       amount: Number(amount * 100),
@@ -31,23 +28,19 @@ const checkout = async (req, res) => {
     };
     const order = await instance.orders.create(options);
 
-
     res.status(200).json({
       success: true,
-      order
+      order,
     });
-
   } catch (error) {
     console.log(error);
   }
-
-
 };
-// 
+//
 
 const paymentVerification = async (req, res) => {
-
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
 
   const body = razorpay_order_id + "|" + razorpay_payment_id;
 
@@ -66,9 +59,9 @@ const paymentVerification = async (req, res) => {
         port: 465,
         auth: {
           user: process.env.EMAIL,
-          pass: process.env.EMAIL_PASSWORD
+          pass: process.env.EMAIL_PASSWORD,
         },
-      })
+      });
       const mailOptions = {
         from: process.env.EMAIL,
         to: userData.userEmail,
@@ -144,7 +137,9 @@ const paymentVerification = async (req, res) => {
           </head>
           <body>
             <h1>Order Confirmation</h1>
-            <p style="color:black;">Dear <b>${userData.firstName} ${userData.lastName}</b>,</p>
+            <p style="color:black;">Dear <b>${userData.firstName} ${
+          userData.lastName
+        }</b>,</p>
             <p>Thank you for your recent purchase on our website. We have received your payment of <b>₹${totalAmount}</b> and have processed your order.</p>
             <table>
               <thead>
@@ -155,16 +150,17 @@ const paymentVerification = async (req, res) => {
                 </tr>
               </thead>
               <tbody>
-                ${productInfo.map((product) => {
-          return `
+                ${productInfo
+                  .map((product) => {
+                    return `
                             <tr>
                               <td>${product.productId.name}</td>
                               <td>${product.quantity}</td>
                               <td>₹${product.productId.price}</td>
                             </tr>
-                          `
-        }).join('')
-          }
+                          `;
+                  })
+                  .join("")}
           <tr>
           <td>Shipping Charge</td>
           <td></td>
@@ -187,7 +183,7 @@ const paymentVerification = async (req, res) => {
             <p class="thanks">Thank you for choosing our website. If you have any questions or concerns, please don't hesitate to contact us.</p>
             <div class="signature">
               <p>Best regards,</p>
-              <p> <a href="https://e-shopit.vercel.app/" target="_blank">ShopIt.com</a></p>
+              <p> <a href="https://keelnut.vercel.app/" target="_blank">keelnut.vercel.app</a></p>
             </div>
           </body >
         </html >
@@ -263,7 +259,9 @@ const paymentVerification = async (req, res) => {
           </head>
           <body>
             <h1>Order Confirmation</h1>
-            <p style="color:black;">Dear <b>${userData.firstName} ${userData.lastName}</b>,</p>
+            <p style="color:black;">Dear <b>${userData.firstName} ${
+          userData.lastName
+        }</b>,</p>
             <p>Thank you for your recent purchase on our website. We have received your payment of <b>₹${totalAmount}</b> and have processed your order.</p>
             <table>
               <thead>
@@ -274,16 +272,17 @@ const paymentVerification = async (req, res) => {
                 </tr>
               </thead>
               <tbody>
-                ${productInfo.map((product) => {
-          return `
+                ${productInfo
+                  .map((product) => {
+                    return `
                             <tr>
                               <td>${product.productId.name}</td>
                               <td>${product.quantity}</td>
                               <td>₹${product.productId.price}</td>
                             </tr>
-                          `
-        }).join('')
-          }
+                          `;
+                  })
+                  .join("")}
           <tr>
           <td>Shipping Charge</td>
           <td></td>
@@ -306,23 +305,21 @@ const paymentVerification = async (req, res) => {
             <p class="thanks">Thank you for choosing our website. If you have any questions or concerns, please don't hesitate to contact us.</p>
             <div class="signature">
               <p>Best regards,</p>
-              <p> <a href="https://e-shopit.vercel.app/" target="_blank">ShopIt.com</a></p>
+              <p> <a href="https://keelnut.vercel.app/" target="_blank">keelnut.vercel.app</a></p>
             </div>
           </body >
         </html >
-  `
-
-      }
+  `,
+      };
 
       transport.sendMail(mailOptions, (error, info) => {
         if (error) {
           console.log(error);
           // res.send({ msg: error });
+        } else {
+          return res.send({ success, msg: "Order Confirm" });
         }
-        else {
-          return res.send({ success, msg: "Order Confirm" })
-        }
-      })
+      });
       await Payment.create({
         razorpay_order_id,
         razorpay_payment_id,
@@ -330,22 +327,19 @@ const paymentVerification = async (req, res) => {
         user: userInfo,
         productData: productInfo,
         userData,
-        totalAmount
+        totalAmount,
       });
-      const deleteCart = await Cart.deleteMany({ user: userInfo })
+      const deleteCart = await Cart.deleteMany({ user: userInfo });
 
       res.redirect(`${process.env.PAYMENT_SUCCESS}=${razorpay_payment_id} `);
-    }
-    else {
+    } else {
       res.status(400).json({
         success: false,
       });
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.log(error);
   }
-}
+};
 
-
-module.exports = { checkout, paymentVerification }
+module.exports = { checkout, paymentVerification };

@@ -1,17 +1,19 @@
-const User = require('../models/User');
+const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const dotenv = require('dotenv');
-const nodemailer = require('nodemailer');
-const bcrypt = require('bcrypt');
-dotenv.config()
+const dotenv = require("dotenv");
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcrypt");
+dotenv.config();
 let success = false;
 const sendEmailLink = async (req, res) => {
   const { email } = req.body;
-  const findUser = await User.findOne({ email: email })
+  const findUser = await User.findOne({ email: email });
   if (findUser) {
     try {
       const secretKey = findUser._id + process.env.JWT_SECRET;
-      const token = jwt.sign({ userID: findUser._id }, secretKey, { expiresIn: '5m' });
+      const token = jwt.sign({ userID: findUser._id }, secretKey, {
+        expiresIn: "5m",
+      });
 
       const link = `${process.env.FORGOT_PASSWORD}/${findUser._id}/${token}`;
 
@@ -21,9 +23,9 @@ const sendEmailLink = async (req, res) => {
         port: 465,
         auth: {
           user: process.env.EMAIL,
-          pass: process.env.EMAIL_PASSWORD
+          pass: process.env.EMAIL_PASSWORD,
         },
-      })
+      });
       const mailOptions = {
         from: process.env.EMAIL,
         to: email,
@@ -277,63 +279,51 @@ const sendEmailLink = async (req, res) => {
         
         </html>
         `,
-
-      }
+      };
       transport.sendMail(mailOptions, (error, info) => {
         if (error) {
           return res.send({ msg: error });
+        } else {
+          success = true;
+          return res.send({ msg: "Email Sent Please Check Your Email" });
         }
-        else {
-          success = true
-          return res.send({ msg: "Email Sent Please Check Your Email" })
-        }
-      })
+      });
     } catch (error) {
-      return res.send({ msg: error })
+      return res.send({ msg: error });
     }
+  } else {
+    return res.status(400).json({ msg: "User not found" });
   }
-  else {
-    return res.status(400).json({ msg: "User not found" })
-  }
-}
-{/* <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-        <td style="padding-right: 0px;padding-left: 0px;" align="center">
-          
-          <img align="center" border="0" src="https://cdn.templates.unlayer.com/assets/1676547950700-Asset%201.png" alt="image" title="image" style="outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: inline-block !important;border: none;height: auto;float: none;width: 35%;max-width: 203px;" width="203" class="v-src-width v-src-max-width"/>
-          
-        </td>
-        </tr>
-        </table> */}
+};
 const setNewPassword = async (req, res) => {
   const { newPassword } = req.body;
   const { id, token } = req.params;
   try {
     if (newPassword && id && token) {
-      const findUser = await User.findById(id)
+      const findUser = await User.findById(id);
       const secretKey = findUser._id + process.env.JWT_SECRET;
       const isValid = await jwt.verify(token, secretKey);
       if (isValid) {
         const isUser = await User.findById(id);
         // password hashing
-        const salt = await bcrypt.genSalt(10)
-        const hashedPass = await bcrypt.hash(newPassword, salt)
+        const salt = await bcrypt.genSalt(10);
+        const hashedPass = await bcrypt.hash(newPassword, salt);
         const isSuccess = await User.findByIdAndUpdate(isUser._id, {
           $set: {
-            password: hashedPass
-          }
-        })
+            password: hashedPass,
+          },
+        });
         if (isSuccess) {
-          success = true
+          success = true;
           const transport = nodemailer.createTransport({
             service: "gmail",
             host: "smtp.gmail.email",
             port: 465,
             auth: {
               user: process.env.EMAIL,
-              pass: process.env.EMAIL_PASSWORD
+              pass: process.env.EMAIL_PASSWORD,
             },
-          })
+          });
           const mailOptions = {
             from: process.env.EMAIL,
             to: isUser.email,
@@ -538,7 +528,7 @@ table, td { color: #000000; } @media (max-width: 480px) { #u_content_image_1 .v-
 <p style="line-height: 140%;">Thank you for using our service.</p>
 <p style="line-height: 140%;"> </p>
 <p style="line-height: 140%;">Best regards,</p>
-<p style="line-height: 140%;">ShopIt.com</p>
+<p style="line-height: 140%;">Keelnut.vercel.app</p>
   </div>
 
       </td>
@@ -566,63 +556,59 @@ table, td { color: #000000; } @media (max-width: 480px) { #u_content_image_1 .v-
 </body>
 
             </html>`,
-
-          }
+          };
           transport.sendMail(mailOptions, (error, info) => {
             if (error) {
               res.send({ msg: error });
+            } else {
+              return res.send({ msg: "Password Changed Successfully" });
             }
-            else {
-              return res.send({ msg: "Password Changed Successfully" })
-            }
-          })
-        }
-        else {
+          });
+        } else {
           return res.status(400).json({ msg: "some thing went wrong" });
         }
-      }
-      else {
+      } else {
         return res.status(400).json({ msg: "Link has been expired" });
       }
-
-    }
-    else {
+    } else {
       return res.status(400).json({ msg: "All fields are required" });
     }
   } catch (error) {
-    return res.send({ msg: error })
+    return res.send({ msg: error });
   }
-}
+};
 
 const resetPassword = async (req, res) => {
   const { id, currentPassword, newPassword } = req.body;
-  const findUser = await User.findById(id)
+  const findUser = await User.findById(id);
   if (findUser) {
     try {
       const oldPassword = findUser.password;
-      const passwordCompare = await bcrypt.compare(currentPassword, oldPassword)
+      const passwordCompare = await bcrypt.compare(
+        currentPassword,
+        oldPassword
+      );
       if (!passwordCompare) {
         return res.status(400).send("Please enter correct password");
-      }
-      else {
-        const salt = await bcrypt.genSalt(10)
-        const hashedPass = await bcrypt.hash(newPassword, salt)
+      } else {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPass = await bcrypt.hash(newPassword, salt);
         const isSuccess = await User.findByIdAndUpdate(findUser, {
           $set: {
-            password: hashedPass
-          }
-        })
+            password: hashedPass,
+          },
+        });
         if (isSuccess) {
-          success = true
+          success = true;
           const transport = nodemailer.createTransport({
             service: "gmail",
             host: "smtp.gmail.email",
             port: 465,
             auth: {
               user: process.env.EMAIL,
-              pass: process.env.EMAIL_PASSWORD
+              pass: process.env.EMAIL_PASSWORD,
             },
-          })
+          });
           const mailOptions = {
             from: process.env.EMAIL,
             to: findUser.email,
@@ -849,7 +835,7 @@ table, td { color: #000000; } @media (max-width: 480px) { #u_content_image_1 .v-
 <p style="line-height: 140%;">Thank you for using our service.</p>
 <p style="line-height: 140%;"> </p>
 <p style="line-height: 140%;">Best regards,</p>
-<p style="line-height: 140%;">ShopIt.com</p>
+<p style="line-height: 140%;">keelnut.vercel.app</p>
   </div>
 
       </td>
@@ -877,26 +863,22 @@ table, td { color: #000000; } @media (max-width: 480px) { #u_content_image_1 .v-
 </body>
 
             </html>`,
-
-          }
+          };
           transport.sendMail(mailOptions, (error, info) => {
             if (error) {
               return res.status(400).send(error);
+            } else {
+              return res.send("Password Changed Successfully");
             }
-            else {
-              return res.send("Password Changed Successfully")
-            }
-          })
+          });
         }
       }
     } catch (error) {
-      return res.status(400).send("Something went wrong")
-
+      return res.status(400).send("Something went wrong");
     }
-  }
-  else {
+  } else {
     return res.status(400).json("User not found");
   }
-}
+};
 
-module.exports = { sendEmailLink, setNewPassword, resetPassword }
+module.exports = { sendEmailLink, setNewPassword, resetPassword };
